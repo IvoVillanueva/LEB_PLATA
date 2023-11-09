@@ -170,7 +170,7 @@ stats <- function(jug_id) {
     separate(min, c("min", "sec"), ":") %>%
     separate(t2, c("t2_c", "t2_i"), "/") %>%
     separate(t3, c("t3_c", "t3_i"), "/") %>%
-    separate(tc, c("tc_c", "tc_i"), "/") %>%
+    separate(tc, c("tot_c", "tot_i"), "/") %>%
     separate(tl, c("tl_c", "tl_i"), "/") %>%
     inner_join(player, by = join_by(player_id)) %>%
     select(player_id, nombre, equipo, everything()) %>%
