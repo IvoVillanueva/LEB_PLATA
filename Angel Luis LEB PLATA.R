@@ -206,10 +206,13 @@ stats_df %>%
 
 
 
+
 # propuesta Angel LLuis -----------------------------------------------------
 
 
-# caption gráficas------------------------
+# 🔡 text caption--------------------------------------------------------------------
+
+
 
 twitter <- "<span style='color:#000000;font-family: \"Font Awesome 6 Brands\"'>&#xE61A;</span>"
 tweetelcheff <- "<span style='font-weight:bold;'>*@elcheff*</span>"
@@ -217,9 +220,8 @@ insta <- "<span style='color:#E1306C;font-family: \"Font Awesome 6 Brands\"'>&#x
 instaelcheff <- "<span style='font-weight:bold;'>*@sport_iv0*</span>"
 github <- "<span style='color:#000000;font-family: \"Font Awesome 6 Brands\"'>&#xF092;</span>"
 githubelcheff <- "<span style='font-weight:bold;'>*IvoVillanueva*</span>"
-caption <- glue("<br>**Datos**: *lebplata.es* • **Gráfico**: *Ivo Villanueva* • {twitter} {tweetelcheff} • {insta} {instaelcheff} • {github} {githubelcheff}")
+caption <- glue("<br><br>**Datos**: *Lebplata.es* • **Gráfico**: *Ivo Villanueva* • {twitter} {tweetelcheff} • {insta} {instaelcheff} • {github} {githubelcheff}")
 
-# 🤼 wrangle ---------------------------------------
 
 clasificacion <- read_html("https://www.lebplata.es/clasificacion.aspx") %>%
   html_nodes("table") %>%
@@ -259,26 +261,35 @@ Avanzadas <- totales %>%
     TresPR = 100 * (t3_i / tot_i),
     equipo = ifelse(equipo == "SANDA ELECTROCLIMA C.B. L'HOSPITALET", "SANDÁ ELECTROCLIMA C.B. L´HOSPITALET", equipo)
   ) %>%
-  left_join(enlaces_logos)
-
-# 📊 plots --------------------------------------------------------------------
+  left_join(enlaces_logos) %>% 
+  mutate(logos = circle_crop(logos, border_colour = "black", border_size = 5),
+         TOp= TOp/100,
+         EFG = EFG/100) #para poder ponerle la libreria scales
 
 library(ggimage)
 library(magick)
 library(ggtext)
-library(nflplotR)
+library(cropcircles)
+library(scales)
+
+
+#hacer imagenes transparentes
+transparent <- function(img) {
+  
+  image_fx(img, expression = "0.65*a", channel = "alpha")
+}
 
 # Net_TO VS Net_EFG
 
 p <- ggplot(Avanzadas, aes(x = Net_TO, y = Net_EFG)) +
-  geom_abline(slope = -3 / 4, intercept = seq(5.5, -8, -2.5), alpha = .2) +
-  geom_mean_lines(aes(x0 = Net_TO, y0 = Net_EFG)) +
+  ggplot2::geom_abline(slope = -3 / 4, intercept = seq(5.5, -8, -2.5), alpha = .2) +
+  nflplotR::geom_mean_lines(aes(x0 = Net_TO, y0 = Net_EFG)) +
   geom_image(aes(image = logos),
     size = .12
   ) +
   ggplot2::labs(
-    x = "Net_TO", #cambialo a lo que consideres
-    y = "Net_EFG", #cambialo a lo que consideres
+    x = "Net_TO",
+    y = "Net_EFG",
     caption = caption,
     title = "Pon lo que quieras",
     subtitle = "y aquí tambien"
@@ -289,11 +300,11 @@ p <- ggplot(Avanzadas, aes(x = Net_TO, y = Net_EFG)) +
     plot.title = element_text(vjust = 5, face = "bold", size = 40, hjust = .5, family = "Roboto Condensed"),
     plot.subtitle = element_text(vjust = 10, size = 16, hjust = .5, family = "Roboto Condensed", color = "grey75"),
     plot.background = element_rect("white"),
+    # panel.grid = element_blank(),
     plot.margin = unit(c(2, 1, 2, 1), "cm"),
     axis.text = element_text(
-      size = 8,
+      size = 10,
       margin = margin(t = 12),
-      face = "bold",
       color = "black"
     ),
     axis.title = element_text(
@@ -310,17 +321,18 @@ ggsave("tovsefg.png", p, w = 8, h = 8, dpi = "retina", type = "cairo")
 # DER VS OER
 
 p2 <- ggplot(Avanzadas, aes(x = DER, y = OER)) +
-  ggplot2::geom_abline(slope = -3 / 4, intercept = seq(10.7, 40.7, 5), alpha = .2) +
+  ggplot2::geom_abline(slope = -3 / 4, intercept = seq(11.5, 40.7, 5), alpha = .2) +
   nflplotR::geom_mean_lines(aes(x0 = DER, y0 = OER)) +
   geom_image(aes(image = logos),
-    size = .12
+    size = .12,
+    image_fun = transparent
   ) +
   ggplot2::labs(
-    x = "DER", #cambialo a lo que consideres
-    y = "OER", #cambialo a lo que consideres
+    x = "\nRating Defensivo",
+    y = "Rating Ofensivo",
     caption = caption,
-    title = "Pon lo que quieras",
-    subtitle = "y aquí tambien"
+    title = "Defensa vs Ataque",
+    subtitle = "LEB PLATA hasta la J7"
   ) +
   ggplot2::theme_minimal() +
   theme(
@@ -331,19 +343,20 @@ p2 <- ggplot(Avanzadas, aes(x = DER, y = OER)) +
     plot.margin = unit(c(2, 1, 2, 1), "cm"),
     axis.text = element_text(
       size = 8,
-      margin = margin(t = 12),
       face = "bold",
+      family = "Gotham",
+      margin = margin(t = 12),
       color = "black"
     ),
     axis.title = element_text(
+      family = "Roboto",
       size = 14,
-      face = "bold",
       color = "black"
     ),
     plot.caption = element_markdown(hjust = .5, size = 7)
   ) +
   scale_x_reverse() +
-  scale_y_continuous(limits = c(85, 116))
+  scale_y_continuous(limits = c(89, 115))
 
 ggsave("dervsoer.png", p2, w = 8, h = 8, dpi = "retina", type = "cairo")
 
@@ -351,17 +364,18 @@ ggsave("dervsoer.png", p2, w = 8, h = 8, dpi = "retina", type = "cairo")
 # TOp VS EFG
 
 p3 <- ggplot(Avanzadas, aes(x = TOp, y = EFG)) +
-  ggplot2::geom_abline(slope = -3 / 4, intercept = seq(42.8, 15, -2.5), alpha = .2) +
+  ggplot2::geom_abline(slope = -3 / 4, intercept = seq(.4235, .095, -.025), alpha = .2) +
   nflplotR::geom_mean_lines(aes(x0 = TOp, y0 = EFG)) +
   geom_image(aes(image = logos),
-    size = .12
+    size = .12,
+    image_fun = transparent
   ) +
   ggplot2::labs(
-    x = "TOp", #cambialo a lo que consideres
-    y = "EFG", #cambialo a lo que consideres
+    x = "TO%",
+    y = "EFG%",
     caption = caption,
-    title = "Pon lo que quieras",
-    subtitle = "y aquí tambien"
+    title = "Tiros vs Pérdidas",
+    subtitle = "LEB PLATA hasta la J7"
   ) +
   ggplot2::theme_minimal() +
   theme(
@@ -369,23 +383,23 @@ p3 <- ggplot(Avanzadas, aes(x = TOp, y = EFG)) +
     plot.title = element_text(vjust = 5, face = "bold", size = 40, hjust = .5, family = "Roboto Condensed"),
     plot.subtitle = element_text(vjust = 10, size = 16, hjust = .5, family = "Roboto Condensed", color = "grey75"),
     plot.background = element_rect("white"),
+    # panel.grid = element_blank(),
     plot.margin = unit(c(2, 1, 2, 1), "cm"),
     axis.text = element_text(
       size = 8,
-      margin = margin(t = 12),
       face = "bold",
+      family = "Gotham",
+      margin = margin(t = 12),
       color = "black"
     ),
     axis.title = element_text(
+      family = "Roboto",
       size = 14,
-      face = "bold",
       color = "black"
     ),
     plot.caption = element_markdown(hjust = .5, size = 7)
   ) +
-  scale_x_reverse() +
-  scale_y_continuous(limits = c(min(Avanzadas$EFG), max(Avanzadas$EFG) + 1))
-
+  scale_x_reverse(labels = percent)+
+  scale_y_continuous(labels = percent, limits = c(min(Avanzadas$EFG)-.005, max(Avanzadas$EFG) + .01))
 
 ggsave("topvsefg.png", p3, w = 8, h = 8, dpi = "retina", type = "cairo")
-
